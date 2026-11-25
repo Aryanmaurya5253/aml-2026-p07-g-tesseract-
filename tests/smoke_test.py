@@ -6,6 +6,7 @@ Checks that every pipeline step runs and produces its outputs, that the
 leakage audit passes, and that --drop-reversed-orders removes the reversed
 80,995-unit order. It never touches your results/ folder.
 """
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import numpy as np
 import pandas as pd
 
@@ -52,6 +54,24 @@ def main():
         assert np.isfinite(cleaned_baseline[["Quantity", "Price"]].to_numpy()).all(), (
             "cleaned data contains non-finite Quantity or Price"
         )
+
+        # Direct regression test: non-finite core numeric values must be removed.
+        spec = importlib.util.spec_from_file_location(
+            "clean_retail_data", work / "src/clean_retail_data.py"
+        )
+        cleaner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cleaner)
+        bad_values = pd.DataFrame([
+            ["700001", "20001", "VALID ITEM", 2, "2011-01-01 10:00", 3.5, 12001, "United Kingdom"],
+            ["700002", "20002", "INFINITE QTY", np.inf, "2011-01-01 10:01", 3.5, 12002, "United Kingdom"],
+            ["700003", "20003", "INFINITE PRICE", 2, "2011-01-01 10:02", np.inf, 12003, "United Kingdom"],
+        ], columns=["Invoice", "StockCode", "Description", "Quantity", "InvoiceDate",
+                    "Price", "Customer ID", "Country"])
+        finite_cleaned, finite_funnel, _ = cleaner.clean_transactions(bad_values)
+        assert len(finite_cleaned) == 1, "non-finite Quantity/Price values were not removed"
+        invalid_stage = next(row for row in finite_funnel if row["rule"] == "invalid_core_fields")
+        assert invalid_stage["rows_removed"] == 2, "invalid-core-fields funnel count is incorrect"
+
         metrics = pd.read_csv(work / "results/metrics.csv")
         assert {"model", "task", "split", "metric", "value", "notes"} == set(metrics.columns)
         assert metrics.value.between(0, 1).all(), "metric out of [0, 1]"
