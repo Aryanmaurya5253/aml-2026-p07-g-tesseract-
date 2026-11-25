@@ -222,7 +222,7 @@ Optional sensitivity check for the cancellation decision: `python src/clean_reta
 | Aryan Kumar Maurya | 590022160 | TODO |
 | Anirudh Sarkar | 590025468 | TODO |
 | Devam Yadav | 590022492 | TODO |
-| Aniket Malik | 590024567 |MALIK87ANIKET|
+| Aniket Malik | 590024567 | https://github.com/MALIK87ANIKET |
 | Mansha | 590021940 | TODO |
 | Shatakshi | 590021766 | TODO |
 | Saisradha Das | 590029397 | TODO |
