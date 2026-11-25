@@ -26,6 +26,8 @@ Or all at once: `python src/run_all.py` (use `--from-step N` to resume). Noteboo
 
 `python tests/smoke_test.py` runs the whole pipeline on a small SYNTHETIC workbook in a temporary folder to check the code; it never writes to `results/` and its numbers must not be reported.
 
+GitHub Actions runs the same synthetic smoke test on pushes and pull requests targeting `main` (`.github/workflows/smoke-test.yml`). This CI check validates the synthetic pipeline only; it does not rerun or validate the committed real-data results.
+
 ## Randomness
 - All random seeds are `42`: K-Means (`common.RANDOM_STATE`, `n_init=20`), stability subsamples (seeded generator; each bootstrap model uses seed 43–62, `n_init=10`), the silhouette sample in `clustering.py`, PCA, the train/test split and cross-validation folds in `classification.py`, and the Random Forest/Decision Tree/Logistic Regression models.
 - DBSCAN and hierarchical clustering are deterministic.
