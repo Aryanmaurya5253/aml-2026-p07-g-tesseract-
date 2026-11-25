@@ -220,7 +220,7 @@ Optional sensitivity check for the cancellation decision: `python src/clean_reta
 | Member | Enrolment number | GitHub username |
 |---|---:|---|
 | Aryan Kumar Maurya | 590022160 | TODO |
-| Anirudh Sarkar | 590025468 | TODO |
+| Anirudh Sarkar | 590025468 |https://github.com/Anirudhsarkar |
 | Devam Yadav | 590022492 | TODO |
 | Aniket Malik | 590024567 | TODO |
 | Mansha | 590021940 | TODO |
