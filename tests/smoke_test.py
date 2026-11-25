@@ -13,6 +13,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parents[1]
@@ -43,6 +44,14 @@ def main():
         assert (work / "report" / "report.md").exists(), "report draft missing"
         audit = json.loads((work / "results/classification_leakage_audit.json").read_text())
         assert audit["check_all_feature_rows_before_window_end"] and audit["check_no_lifetime_rfm_in_features"]
+        cleaning = json.loads((work / "results/cleaning_summary.json").read_text())
+        assert "cleaning_retention_percent" in cleaning
+        expected_retention = cleaning["clean_rows"] / cleaning["raw_rows"] * 100
+        assert abs(cleaning["cleaning_retention_percent"] - expected_retention) < 1e-9
+        cleaned_baseline = pd.read_csv(work / "data/processed/transactions_clean.csv")
+        assert np.isfinite(cleaned_baseline[["Quantity", "Price"]].to_numpy()).all(), (
+            "cleaned data contains non-finite Quantity or Price"
+        )
         metrics = pd.read_csv(work / "results/metrics.csv")
         assert {"model", "task", "split", "metric", "value", "notes"} == set(metrics.columns)
         assert metrics.value.between(0, 1).all(), "metric out of [0, 1]"
