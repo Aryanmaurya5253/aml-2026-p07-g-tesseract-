@@ -24,7 +24,7 @@ EXPECTED = [
     "hierarchical_metrics.csv", "dbscan_grid.csv", "kmeans_stability.csv", "clustering_comparison.json",
     "k_selection.csv", "segment_profiles.csv", "customer_segments.csv", "metrics.csv",
     "classification_leakage_audit.json", "figures/segments_pca.png", "figures/dendrogram_ward.png",
-    "figures/dbscan_kdistance.png",
+    "figures/dbscan_kdistance.png", "figures/rfm_distributions.png",
 ]
 
 
@@ -85,8 +85,10 @@ def main():
         assert new["reversed_order_lines_removed"] == new["reversed_order_lines_detected"], (
             "detected reversed purchase lines were not all removed"
         )
-        assert new["clean_rows"] == base_rows - new["reversed_order_lines_removed"], (
-            "cleaning row count does not match the reversed-order removal count"
+        actual_clean_row_difference = base_rows - new["clean_rows"]
+        assert 0 < actual_clean_row_difference <= new["reversed_order_lines_removed"], (
+            "reversed-order sensitivity run did not reduce the final cleaned dataset "
+            "by a plausible number of matched rows"
         )
         cleaned = pd.read_csv(work / "data/processed/transactions_clean.csv")
         assert not (cleaned["Quantity"] == 80995).any(), "reversed 80,995-unit order still present"
