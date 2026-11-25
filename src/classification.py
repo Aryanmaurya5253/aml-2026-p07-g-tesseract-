@@ -171,7 +171,8 @@ def evaluate(task, X, y, seed, test_size):
     rows, fitted, cv_scores = [], {}, {}
     for name, (estimator, grid) in model_specs(seed).items():
         if grid:
-            search = GridSearchCV(estimator, grid, scoring="f1_macro", cv=cv, n_jobs=-1)
+            # Keep CV serial to avoid spawning many memory-heavy workers on student laptops.
+            search = GridSearchCV(estimator, grid, scoring="f1_macro", cv=cv, n_jobs=1)
             search.fit(X_tr, y_tr)
             best, best_cv = search.best_estimator_, float(search.best_score_)
             cv_std = float(search.cv_results_["std_test_score"][search.best_index_])
