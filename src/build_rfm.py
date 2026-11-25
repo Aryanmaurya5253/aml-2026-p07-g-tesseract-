@@ -2,6 +2,9 @@
 import json
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
@@ -9,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 ROOT = Path(__file__).resolve().parents[1]
 PROCESSED = ROOT / "data" / "processed"
 RESULTS = ROOT / "results"
+FIGURES = RESULTS / "figures"
 FEATURES = ["Recency", "Frequency", "Monetary"]
 
 
@@ -27,7 +31,8 @@ def main() -> None:
     ).reset_index()
     rfm["Recency"] = (reference_date - rfm["last_purchase"]).dt.days
     rfm = rfm[["Customer ID", *FEATURES]]
-    if rfm[FEATURES].isna().any().any() or (rfm[FEATURES] <= 0).any().any():
+    values = rfm[FEATURES].to_numpy(dtype=float)
+    if not np.isfinite(values).all() or (values <= 0).any():
         raise ValueError("RFM features must be finite and positive before log scaling.")
 
     log_values = np.log1p(rfm[FEATURES])
@@ -78,6 +83,22 @@ def main() -> None:
     (RESULTS / "rfm_summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
     )
+
+    # Save raw and log1p distributions for all three RFM features.
+    FIGURES.mkdir(parents=True, exist_ok=True)
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7))
+    for column, feature in enumerate(FEATURES):
+        axes[0, column].hist(rfm[feature], bins=50)
+        axes[0, column].set_title(f"{feature} (raw)")
+        axes[0, column].set_xlabel(feature)
+        axes[1, column].hist(log_values[feature], bins=50)
+        axes[1, column].set_title(f"log1p({feature})")
+        axes[1, column].set_xlabel(f"log1p({feature})")
+    fig.suptitle("Customer RFM distributions before and after log transformation")
+    fig.tight_layout()
+    fig.savefig(FIGURES / "rfm_distributions.png", dpi=160)
+    plt.close(fig)
+
     print(f"Customers: {len(rfm):,}; reference date: {reference_date.date()}")
     print("RFM tables and summary saved under results/.")
 
