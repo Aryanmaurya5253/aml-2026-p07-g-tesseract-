@@ -40,14 +40,14 @@ The workbook was inspected and both sheets were combined.
 | Year 2010–2011 | 541,910 | 8 |
 | **Combined** | **1,067,371** | **8** |
 
-The current baseline retains **776,672 transactions (72.765%)** after sequential cleaning. See [cleaning funnel](results/cleaning_funnel.csv) and [cleaning summary](results/cleaning_summary.json).
+The committed cleaning funnel and summary currently record **776,672 transactions (72.765%)** from an earlier run. The cleaning code has since been hardened (including explicit invalid-core-field and non-finite numeric checks), so these tracked figures are **stale until Phase 1 is rerun** with the current script. Do not treat them as the output of the latest code. See [cleaning funnel](results/cleaning_funnel.csv) and [cleaning summary](results/cleaning_summary.json).
 
 Cleaning decisions:
 - Remove exact duplicate rows.
 - Remove transactions without Customer ID because customer-level RFM requires customer identity.
 - Exclude cancellation invoices whose Invoice value begins with `C`; these are not netted against original purchases.
 - Exclude the explicit non-product/service StockCode list in the cleaning script.
-- Remove rows with invalid core fields and non-positive quantities or prices.
+- Remove rows with missing/invalid invoice, stock code, date, quantity or price; non-finite quantity/price values; and non-positive quantities or prices.
 - Do not automatically cap or remove extreme positive quantity/price values; inspect them during EDA.
 
 Run from the repository root:
@@ -110,7 +110,7 @@ Definitions:
 - **Frequency:** number of distinct invoice IDs per customer (not transaction-line count).
 - **Monetary:** sum of Quantity × Price across retained transactions, in GBP.
 
-The reference date is **10 December 2011**, one calendar day after the latest retained transaction date (9 December 2011). This is fixed from the dataset rather than the machine's current date.
+The reference timestamp is **10 December 2011 at 12:50**, exactly one day after the latest retained transaction timestamp (9 December 2011 at 12:50). The implementation preserves the timestamp rather than normalising it to midnight. This is fixed from the dataset rather than the machine's current date.
 
 ### RFM results
 
@@ -153,7 +153,7 @@ python src/clustering.py
 
 ### Baseline result
 
-The highest sampled silhouette among tested values was at **k=2 (0.4444)**. For k=2, the Davies-Bouldin index was **0.8730** and the Calinski-Harabasz score was **6177.7656**. This makes k=2 a provisional candidate, not a final decision. We must also inspect cluster sizes, customer RFM profiles, the elbow curve and business usefulness before selecting a final segmentation.
+The highest sampled silhouette among tested values was at **k=2 (0.4447)**. For k=2, the full-data silhouette was **0.4383**, the Davies-Bouldin index was **0.8734**, and the Calinski-Harabasz score was **6161.56**. This makes k=2 a provisional candidate, not a final decision. We must also inspect cluster sizes, customer RFM profiles, the elbow curve and business usefulness before selecting a final segmentation.
 
 See [K-Means metrics](results/kmeans_metrics.csv) and [K-Means summary](results/kmeans_summary.json). The script also generates customer assignments, cluster profiles and elbow/silhouette/PCA plots locally under `results/` and `results/figures/`.
 
@@ -245,8 +245,17 @@ Claude (Anthropic) was used to help write and test the scripts for Phase 2 addit
 - `checkpoint-2`: full clustering pipeline and initial results. Run `python src/run_all.py` on the real data, review the outputs, then tag.
 - Final: analysis, evaluation, report, README and `REPRODUCIBILITY.md`.
 
-## Headline results
-Not yet recorded: the Phase 4B–6 scripts have been tested end-to-end on synthetic data only. Run `python src/run_all.py` on the real workbook, review `results/segment_profiles.csv`, `results/k_selection.csv` and `results/metrics.csv`, then copy the real numbers here. Cleaning retention and EDA statistics are data-preparation results, not model-performance metrics.
+## Headline results (committed run; rerun after the current cleaning fix)
+
+The committed outputs include a real-data run over 5,861 customers. These figures describe the currently committed result files; they are not yet regenerated with the latest cleaning-code changes.
+
+- **Final segmentation:** K-Means, k=4, selected by the documented silhouette, minimum-cluster-share and stability constraints.
+- **Segment sizes:** Champions 1,188 (20.27%); At-Risk High-Value 1,457 (24.86%); Recent Customers 1,249 (21.31%); Lost / Dormant 1,967 (33.56%).
+- **Revenue concentration:** Champions account for 73.91% of recorded gross revenue. This is heavily affected by the decision to exclude cancellation invoices rather than net them; investigate the 80,995-unit PAPER CRAFT order and compare the optional reversed-order sensitivity run before treating this as representative.
+- **Classification headline:** the future-label task has 5,167 eligible customers. Logistic Regression has the highest committed test macro-F1 (0.3474); Random Forest has test accuracy 0.4884. The majority baseline has higher accuracy (0.5457), so classification is not uniformly better than baseline. Report macro-F1, class-wise recall and the imbalance caveat rather than accuracy alone.
+- **Algorithm comparison:** the committed comparison table reports K-Means k=4 silhouette 0.3652, hierarchical average-linkage k=3 silhouette 0.4965, and DBSCAN silhouette 0.2865 with 4.21% noise. These metrics use different cluster structures; compare their cluster-size profiles and business usefulness as well as silhouette.
+
+The real-data outputs must be regenerated after Phase 1 is rerun with the current code. Cleaning retention and EDA statistics are data-preparation results, not model-performance metrics.
 
 ## Current status
-Phases 1–3 and the K-Means baseline (4A) were run on the real data. Phases 2 (purchasing patterns), 4B, 5, 6 and 7 are implemented and pass an end-to-end smoke test on synthetic data and under the pinned `requirements.txt`; they still need to be run on the real workbook, their outputs reviewed (especially segment names and the chosen k), and the report edited.
+The repository contains committed real-data results for Phases 1–6 and a generated report draft. The latest cleaning changes, RFM plot addition and serial classification grid-search setting have not yet been rerun end-to-end on the original workbook. The synthetic smoke test is a separate code-path check and its numbers must never be reported as project findings. Before submission, rerun the full pipeline on the UCI workbook, inspect segment profiles and the cancellation sensitivity analysis, run the synthetic smoke test, update the report and record the final environment/runtime.
