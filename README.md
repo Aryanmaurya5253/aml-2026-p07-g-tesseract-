@@ -7,6 +7,12 @@
 ## Project question
 Which genuinely distinct customer groups exist in online retail transactions, and can a model assign a new customer to a segment using only their early purchase behaviour?
 
+## License
+
+The project source code and documentation are licensed under the [MIT License](LICENSE).
+The UCI Online Retail II dataset is a third-party resource and remains subject to
+its own terms; this repository's MIT License does not relicense the dataset.
+
 ## Dataset
 Use [UCI Online Retail II](https://archive.ics.uci.edu/dataset/502/online+retail+ii). Download the dataset ZIP in a browser, extract the workbook, and place it at `data/raw/online_retail_II.xlsx`. See [dataset/README.md](dataset/README.md) for the download and placement instructions.
 
