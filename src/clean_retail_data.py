@@ -12,6 +12,7 @@ import argparse
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,10 +156,14 @@ def clean_transactions(
             "for the same customer, stock code and quantity.",
         )
         diagnostics["reversed_order_lines_removed"] = int(before - len(data))
+    # Reject missing values and +/- infinity; > 0 alone would allow
+    # infinite quantities or prices into revenue and RFM calculations.
     valid_core = (
-        data["InvoiceDate"].notna() & data["Invoice"].notna()
-        & data["StockCode"].notna() & data["Quantity"].notna()
-        & data["Price"].notna()
+        data["InvoiceDate"].notna()
+        & data["Invoice"].notna()
+        & data["StockCode"].notna()
+        & np.isfinite(data["Quantity"])
+        & np.isfinite(data["Price"])
     )
     data = keep_rows(
         data, funnel, "invalid_core_fields", valid_core,
@@ -184,6 +189,10 @@ def clean_transactions(
 
     diagnostics.update({
         "clean_rows": int(len(data)),
+        "cleaning_retention_percent": (
+            float(len(data) / len(raw) * 100) if len(raw) else 0.0
+        ),
+        "cleaning_removed_rows": int(len(raw) - len(data)),
         "clean_customers": int(data["Customer ID"].nunique()),
         "clean_min_invoice_date": data["InvoiceDate"].min().isoformat() if len(data) else None,
         "clean_max_invoice_date": data["InvoiceDate"].max().isoformat() if len(data) else None,
